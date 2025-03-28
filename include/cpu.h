@@ -9,7 +9,7 @@
  * Otherwise, return 1. */
 int run(struct pcb_t * proc);
 
-hello my name is linh 
+
 
 
 #endif
