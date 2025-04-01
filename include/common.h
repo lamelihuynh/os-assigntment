@@ -62,7 +62,7 @@ struct trans_table_t
 };
 
 /* Mapping virtual addresses and physical ones */
-struct p\age_table_t
+struct page_table_t
 {
 	/* Translation table for the first layer */
 	struct
@@ -79,7 +79,7 @@ struct pcb_t
 	uint32_t pid;		 // PID
 	uint32_t priority;	 // Default priority, this legacy process based (FIXED)
 	char path[100];
-	struct code_seg_t *code; // Code segment
+	struct code_seg_t *code; // Code segment 
 	addr_t regs[10];	 // Registers, store address of allocated regions
 	uint32_t pc;		 // Program pointer, point to the next instruction
 	struct queue_t *ready_queue;
