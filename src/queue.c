@@ -10,7 +10,6 @@ void enqueue(struct queue_t *q, struct pcb_t *proc) {
     if (q == NULL || proc == NULL || q->size >= MAX_QUEUE_SIZE) {
         return;
     }
-
     int i = q->size - 1;
     
     while (i >= 0 && q->proc[i] != NULL && q->proc[i]->priority < proc->priority) {
