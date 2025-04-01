@@ -47,51 +47,20 @@ void init_scheduler(void) {
  *  State representation   prio = 0 .. MAX_PRIO, curr_slot = 0..(MAX_PRIO - prio)
  */
 struct pcb_t * get_mlq_proc(void) {
-	// struct pcb_t * proc = NULL;
-	// /*TODO: get a process from PRIORITY [ready_queue].
-	//  * Remember to use lock to protect the queue.
-	//  * */
-	// pthread_mutex_lock(&queue_lock);
-	// for(int prio = 0; prio < MAX_PRIO; ++prio){
-	// 	if( !empty(&mlq_ready_queue[prio]) && slot[prio] > 0){
-	// 		proc = dequeue(&mlq_ready_queue[prio]);
-	// 		slot[prio]--;
-	// 		break;
-	// 	}
-	// }
-	// pthread_mutex_unlock(&queue_lock);
-	// return proc;	
-
-	struct pcb_t* proc = NULL;
-    static int current_prio = 0;    // Current priority level
-    static int slots_used = 0;      // Slots used in current priority
-
-    pthread_mutex_lock(&queue_lock);
-
-    // Check all priority levels once
-    int checked = 0;
-    while (checked < MAX_PRIO) {
-        // Calculate current priority queue to check
-        int check_prio = (current_prio + checked) % MAX_PRIO;
-        
-        if (!empty(&mlq_ready_queue[check_prio])) {
-            // Get process from current queue
-            proc = dequeue(&mlq_ready_queue[check_prio]);
-            slots_used++;
-            
-            // If slots exhausted for current priority
-            if (slots_used >= (MAX_PRIO - check_prio)) {
-                slots_used = 0;
-                current_prio = (check_prio + 1) % MAX_PRIO;
-            }
-            break;
-        }
-        
-        checked++;
-    }
-
-    pthread_mutex_unlock(&queue_lock);
-    return proc;
+	struct pcb_t * proc = NULL;
+	/*TODO: get a process from PRIORITY [ready_queue].
+	 * Remember to use lock to protect the queue.
+	 * */
+	pthread_mutex_lock(&queue_lock);
+	for(int prio = 0; prio < MAX_PRIO; ++prio){
+		if( !empty(&mlq_ready_queue[prio]) && slot[prio] > 0){
+			proc = dequeue(&mlq_ready_queue[prio]);
+			slot[prio]--;
+			break;
+		}
+	}
+	pthread_mutex_unlock(&queue_lock);
+	return proc;	
 }
 
 void put_mlq_proc(struct pcb_t * proc) {
