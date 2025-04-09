@@ -163,6 +163,11 @@ int MEMPHY_dump(struct memphy_struct *mp)
   /*TODO dump memphy contnt mp->storage
    *     for tracing the memory content
    */
+   // if (!mp || !mp->storage) return -1;
+
+   // for (int i = 0; i < mp->maxsz; i++) {
+   //    printf("Addr %03d: %02X\n", i, mp->storage[i]);
+   // }
    return 0;
 }
 
