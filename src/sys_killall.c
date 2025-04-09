@@ -13,6 +13,9 @@
 #include "stdio.h"
 #include "libmem.h"
 
+#include "queue.h"
+
+
 int __sys_killall(struct pcb_t *caller, struct sc_regs* regs)
 {
     char proc_name[100];
@@ -46,3 +49,4 @@ int __sys_killall(struct pcb_t *caller, struct sc_regs* regs)
 
     return 0; 
 }
+

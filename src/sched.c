@@ -10,9 +10,15 @@ static struct queue_t run_queue;
 static pthread_mutex_t queue_lock;
 
 static struct queue_t running_list;
+// Proper declaration adder 
+static current_prio = 0;
+static remaining_slot = 0;
+
+
 #ifdef MLQ_SCHED
 static struct queue_t mlq_ready_queue[MAX_PRIO];
 static int slot[MAX_PRIO];
+
 #endif
 
 int queue_empty(void) {
@@ -33,6 +39,11 @@ void init_scheduler(void) {
 		mlq_ready_queue[i].size = 0;
 		slot[i] = MAX_PRIO - i; 
 	}
+	// Initialize current_prio and remaining_slot
+	current_prio = 0;
+	remaining_slot = slot[0]; // Start with slots for highest priority
+
+
 #endif
 	ready_queue.size = 0;
 	run_queue.size = 0;
@@ -48,6 +59,24 @@ void init_scheduler(void) {
  */
 struct pcb_t * get_mlq_proc(void) {
 	struct pcb_t * proc = NULL;
+	pthread_mutex_lock(&queue_lock);
+
+	int checked_queues = 0;
+	while(checked_queues < MAX_PRIO){
+		if (!empty(&mlq_ready_queue[current_prio])&& (remaining_slot>0) ){
+			proc = dequeue(&mlq_ready_queue[current_prio]);
+			(remaining_slot)--;
+			break;
+		}
+		current_prio = (current_prio + 1) % MAX_PRIO;
+		remaining_slot = slot[current_prio];
+		checked_queues++;
+	}
+
+	pthread_mutex_unlock(&queue_lock);
+
+
+
 	/*TODO: get a process from PRIORITY [ready_queue].
 	 * Remember to use lock to protect the queue.
 	 * */
@@ -92,10 +121,15 @@ void add_proc(struct pcb_t * proc) {
 }
 #else
 struct pcb_t * get_proc(void) {
-	struct pcb_t * proc = NULL;
 	/*TODO: get a process from [ready_queue].
 	 * Remember to use lock to protect the queue.
 	 * */
+	struct pcb_t * proc = NULL;
+	pthread_mutex_lock(&queue_lock); 
+	if (!empty(&ready_queue)){
+		proc = dequeue(&ready_queue);
+	}
+	pthread_mutex_unlock(&queue_lock);
 	return proc;
 }
 

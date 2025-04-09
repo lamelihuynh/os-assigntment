@@ -207,6 +207,7 @@ int main(int argc, char * argv[]) {
 	read_config(path);
 
 	pthread_t * cpu = (pthread_t*)malloc(num_cpus * sizeof(pthread_t));
+	
 	struct cpu_args * args =
 		(struct cpu_args*)malloc(sizeof(struct cpu_args) * num_cpus);
 	pthread_t ld;
@@ -235,6 +236,7 @@ int main(int argc, char * argv[]) {
 	for(sit = 0; sit < PAGING_MAX_MMSWP; sit++)
 	       init_memphy(&mswp[sit], memswpsz[sit], rdmflag);
 
+
 	/* In Paging mode, it needs passing the system mem to each PCB through loader*/
 	struct mmpaging_ld_args *mm_ld_args = malloc(sizeof(struct mmpaging_ld_args));
 
@@ -254,6 +256,8 @@ int main(int argc, char * argv[]) {
 #else
 	pthread_create(&ld, NULL, ld_routine, (void*)ld_event);
 #endif
+
+
 	for (i = 0; i < num_cpus; i++) {
 		pthread_create(&cpu[i], NULL,
 			cpu_routine, (void*)&args[i]);
@@ -271,6 +275,3 @@ int main(int argc, char * argv[]) {
 	return 0;
 
 }
-
-
-
