@@ -160,10 +160,19 @@ int MEMPHY_get_freefp(struct memphy_struct *mp, int *retfpn)
 
 int MEMPHY_dump(struct memphy_struct *mp)
 {
-  /*TODO dump memphy contnt mp->storage
-   *     for tracing the memory content
-   */
-   return 0;
+   // if (mp == NULL || mp->storage == NULL)
+   // {
+   //    printf("Error : invalid memo structure.\n");
+   //    return -1;
+   // }
+   // printf("MEMPHY dump (max size %d bytes):\n", mp->maxsz);
+   // for (int i = 0; i < mp->maxsz; i++) {
+   //     printf("%02x ", mp->storage[i]);
+   //     if ((i + 1) % 16 == 0)
+   //         printf("\n");
+   // }
+
+    return 0;
 }
 
 int MEMPHY_put_freefp(struct memphy_struct *mp, int fpn)
