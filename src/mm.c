@@ -86,15 +86,15 @@ int vmap_page_range(struct pcb_t *caller,           // process call
                     struct framephy_struct *frames, // list of the mapped frames
                     struct vm_rg_struct *ret_rg)    // return mapped region, the real mapped fp
 {                                                   // no guarantee all given pages are mapped
-  struct framephy_struct *fpit;
+  struct framephy_struct *fpit = frames;
   int pgit = 0;
   int pgn = PAGING_PGN(addr);
 
   /* Check if ret_rg is NULL to prevent segmentation fault */
-  // if (ret_rg == NULL) {
-  //   printf("Error: ret_rg is NULL in vmap_page_range\n");
-  //   return -1;
-  // }
+  if (ret_rg == NULL) {
+    // printf("Error: ret_rg is NULL in vmap_page_range\n");
+    return -1;
+  }
 
 
   /*  update the rg_end and rg_start of ret_rg */
@@ -106,6 +106,7 @@ int vmap_page_range(struct pcb_t *caller,           // process call
    *      [addr to addr + pgnum*PAGING_PAGESZ
    *      in page table caller->mm->pgd[]
    */
+  // while (fpit != NULL && pgit < pgnum) 
   while (fpit != NULL && pgit < pgnum) 
   {
     /*Update the page table entry for this page*/
@@ -400,6 +401,15 @@ int print_pgtbl(struct pcb_t *caller, uint32_t start, uint32_t end)
   {
     printf("%08ld: %08x\n", pgit * sizeof(uint32_t), caller->mm->pgd[pgit]);
   }
+
+  for (pgit = pgn_start; pgit < pgn_end; pgit++)
+    {
+        printf("Page Number: %d -> Frame Number: %d\n", pgit, PAGING_FPN(caller->mm->pgd[pgit]));
+    }
+    printf("================================================================\n");
+
+
+
 
   return 0;
 }

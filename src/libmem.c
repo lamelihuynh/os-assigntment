@@ -22,6 +22,9 @@
 #include <stdio.h>
 #include <pthread.h>
 
+
+// #define syscall os_syscall 
+
 static pthread_mutex_t mmvm_lock = PTHREAD_MUTEX_INITIALIZER;
 
 /*enlist_vm_freerg_list - add new rg to freerg_list
@@ -54,7 +57,7 @@ struct vm_rg_struct *get_symrg_byid(struct mm_struct *mm, int rgid)
 {
   if (rgid < 0 || rgid > PAGING_MAX_SYMTBL_SZ)
     return NULL;
-
+  
   return &mm->symrgtbl[rgid];
 }
 
@@ -70,6 +73,7 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
 {
 
   /*Lock the memory*/
+
   pthread_mutex_lock(&mmvm_lock);
   /*Allocate at the toproof */
 
@@ -78,6 +82,7 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
   /* TODO: commit the vmaid */
   // rgnode.vmaid
 
+  //
   if (get_free_vmrg_area(caller, vmaid, size, &rgnode) == 0)
   {
     caller->mm->symrgtbl[rgid].rg_start = rgnode.rg_start;
@@ -114,17 +119,49 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
   regs.a1 = SYSMEM_INC_OP;
   regs.a2 = vmaid;
   regs.a3 = inc_sz;
+
+  /* SYSCALL 17 sys_memmap   */
   
-  /* SYSCALL 17 sys_memmap */
-  int syscall_result = syscall(caller, 17, &regs);
+   int syscall_result = os_syscall(caller, 17, &regs);
+
   if (syscall_result < 0) {
     pthread_mutex_unlock(&mmvm_lock);
     return -1;
   }
   /* : commit the limit increment */
-  *alloc_addr = old_sbrk;
-  caller->mm->symrgtbl[rgid].rg_start = old_sbrk;
-  caller->mm->symrgtbl[rgid].rg_end = old_sbrk + size;
+  // *alloc_addr = old_sbrk;
+  if (get_free_vmrg_area(caller, vmaid, size, &rgnode) == 0) {
+    caller->mm->symrgtbl[rgid].rg_start = rgnode.rg_start;
+    caller->mm->symrgtbl[rgid].rg_end = rgnode.rg_end;
+    *alloc_addr = rgnode.rg_start;
+  }
+  else {
+      pthread_mutex_unlock(&mmvm_lock);
+      return -1;
+  }
+
+  // if (old_sbrk == 0 && caller->mm->symrgtbl[rgid].rg_next == NULL) {
+    caller->mm->symrgtbl[rgid].rg_start = old_sbrk;
+    caller->mm->symrgtbl[rgid].rg_end = old_sbrk + size;
+  // else{
+  //   struct vm_rg_struct * new_rg = malloc(sizeof(struct vm_rg_struct));
+  //   new_rg->rg_start = old_sbrk;
+  //   new_rg->rg_end = old_sbrk + size;
+  //   struct vm_rg_struct * travel =caller->mm->symrgtbl[rgid].rg_next ;
+  //   if (travel == NULL){
+
+  //     caller->mm->symrgtbl[rgid].rg_next = new_rg;
+  //     pthread_mutex_unlock(&mmvm_lock);
+  //     return 0;
+  //   }
+
+  //   while (travel != NULL && travel->rg_next !=NULL){
+  //     travel=travel->rg_next;
+  //   }
+  //   travel->rg_next =  new_rg;
+  // }
+
+
   pthread_mutex_unlock(&mmvm_lock);
   return 0;
 
@@ -184,7 +221,9 @@ int liballoc(struct pcb_t *proc, uint32_t size, uint32_t reg_index)
   int addr;
 
   /* By default using vmaid = 0 */
-  return __alloc(proc, 0, reg_index, size, &addr);
+  __alloc(proc, 0, reg_index, size, &addr);
+  return addr;
+  
 }
 
 /*libfree - PAGING-based free a region memory
@@ -254,6 +293,7 @@ int pg_getpage(struct mm_struct *mm, int pgn, int *fpn, struct pcb_t *caller)
 
     enlist_pgn_node(&caller->mm->fifo_pgn,pgn);
   }
+
 
   *fpn = PAGING_FPN(mm->pgd[pgn]);
 
@@ -370,6 +410,7 @@ int libread(
   int val = __read(proc, 0, source, offset, &data);
 
   /* TODO update result of reading action*/
+    *destination = data;
   //destination 
 #ifdef IODUMP
   printf("read region=%d offset=%d value=%d\n", source, offset, data);
@@ -484,6 +525,8 @@ int find_victim_page(struct mm_struct *mm, int *retpgn)
  */
 int get_free_vmrg_area(struct pcb_t *caller, int vmaid, int size, struct vm_rg_struct *newrg)
 {
+  int aligned_size = PAGING_PAGE_ALIGNSZ(size);
+
   struct vm_area_struct *cur_vma = get_vma_by_num(caller->mm, vmaid);
 
   if (cur_vma == NULL){
@@ -501,18 +544,19 @@ int get_free_vmrg_area(struct pcb_t *caller, int vmaid, int size, struct vm_rg_s
 
   /* TODO Traverse on list of free vm region to find a fit space */
   while (rgit != NULL){
-    if (rgit -> rg_end - rgit-> rg_start >= size ){
+    if (rgit -> rg_end - rgit-> rg_start >= aligned_size ){
       /*Found a region large enough*/
-      newrg->rg_start= rgit->rg_start;
-      newrg->rg_end = rgit->rg_start + size;
+      newrg->rg_start = rgit->rg_start;
+      newrg->rg_end = rgit->rg_start + aligned_size;
+      
       /*Update the free region*/
 
-      if (rgit->rg_end - rgit->rg_start == size){
+      if (rgit->rg_end - rgit->rg_start == aligned_size){
         cur_vma->vm_freerg_list = rgit->rg_next;
         free(rgit);
       }
       else {
-        rgit->rg_start = rgit->rg_start + size;
+        rgit->rg_start = rgit->rg_start + aligned_size;
       }
       return 0;
     }

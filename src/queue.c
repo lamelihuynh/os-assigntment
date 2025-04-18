@@ -18,6 +18,8 @@ void enqueue(struct queue_t * q, struct pcb_t * proc) {
                 return; 
         }
 
+
+
         if (q->size < 0){
                 printf("Wrong size of queue list\n");
                 return;
@@ -27,19 +29,6 @@ void enqueue(struct queue_t * q, struct pcb_t * proc) {
         q->proc[q->size] = proc;
         (q->size)++;
 
-        // int i;
-        // for (i = 0; i < q->size; i++){
-        //         if (proc->priority < q->proc[i]->priority) {
-        //                 break;
-        //         }
-        // }
-
-        // for (int j = q->size; j > i ; j--){
-        //         q->proc[j]= q->proc[j-1];
-        // }
-
-        // q->proc[i] = proc; 
-        // q->size++;
 
         return;
 }
@@ -53,36 +42,23 @@ struct pcb_t * dequeue(struct queue_t * q) {
                 printf("Queue is empty\n");
                 return NULL;
          }
-         
-        // struct pcb_t * pcb_t_ptr =  q->proc[0];
-
-        //  for (int i=0; i<q->size; i++){
-        //         q->proc[i] = q->proc[i+1];
-        //  }
-
-        //  (q->size)--;
-
-        int highest_prio_indx = 0; // (lowest priority number = highest priority)
-        for (int i = 1; i< q->size ; i++){
-                if (q->proc[i]->priority < q->proc[highest_prio_indx]){
-                        highest_prio_indx = i;
-                }
-        }
-
-        struct pcb_t * pcb_t_ptr = q->proc[highest_prio_indx];
-
-        for (int i = highest_prio_indx; i<q->size-1; i++){
-                q->proc[i] = q->proc[i+1];
-        }
-        q->size--;
 
 
-        // if ( q == NULL || q->size ==0){
-        //      printf ("Queue is empty\n"); 
-        //      return NULL;  
+        // int highest_prio_indx = 0; // (lowest priority number = highest priority)
+        // for (int i = 1; i< q->size ; i++){
+        //         if (q->proc[i]->priority < q->proc[highest_prio_indx]){
+        //                 highest_prio_indx = i;
+        //         }
         // }
 
-        // struct pcb_t * proc = q->proc[0];
+        // struct pcb_t * pcb_t_ptr = q->proc[highest_prio_indx];
+
+        struct pcb_t * pcb_t_ptr =  q->proc[0];
+        for (int i = 0; i<q->size-1; i++){
+                q->proc[i] = q->proc[i+1];
+        }
+        q->proc[q->size-1] = NULL;
+        q->size--;
 
 	return pcb_t_ptr;
 }

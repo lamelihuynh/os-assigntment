@@ -15,6 +15,7 @@
  *@vmaid: ID vm area to alloc memory region
  *
  */
+
 struct vm_area_struct *get_vma_by_num(struct mm_struct *mm, int vmaid)
 {
   struct vm_area_struct *pvma = mm->mmap;
@@ -55,19 +56,21 @@ struct vm_rg_struct *get_vm_area_node_at_brk(struct pcb_t *caller, int vmaid, in
   /* TODO retrive current vma to obtain newrg, current comment out due to compiler redundant warning*/
   struct vm_rg_struct * newrg;
   struct vm_area_struct *cur_vma = get_vma_by_num(caller->mm, vmaid);
+  
   if (cur_vma == NULL) {
     return NULL;
   }
+
   newrg = malloc(sizeof(struct vm_rg_struct));
   if (newrg == NULL) return NULL;
 
   /* TODO: update the newrg boundary*/
-  newrg->rg_start = cur_vma->sbrk;
+  newrg->rg_start = cur_vma->vm_end;
   newrg->rg_end = newrg->rg_start + alignedsz;
-  newrg->rg_start = NULL;
+  newrg->rg_next = NULL;
 
   /*Update break point for future allocation*/
-  cur_vma->sbrk = newrg->rg_end;
+  cur_vma->sbrk = newrg->rg_start + size;
 
   return newrg;
 }
@@ -79,6 +82,8 @@ struct vm_rg_struct *get_vm_area_node_at_brk(struct pcb_t *caller, int vmaid, in
  *@vmaend: vma end
  *
  */
+
+
 int validate_overlap_vm_area(struct pcb_t *caller, int vmaid, int vmastart, int vmaend)
 {
   struct vm_area_struct *vma = caller->mm->mmap;
@@ -106,10 +111,11 @@ int validate_overlap_vm_area(struct pcb_t *caller, int vmaid, int vmastart, int 
  *@inc_sz: increment size
  *
  */
+
 int inc_vma_limit(struct pcb_t *caller, int vmaid, int inc_sz)
 {
   struct vm_rg_struct * newrg = malloc(sizeof(struct vm_rg_struct));
-  if (newrg = NULL) return -1;
+  if (newrg == NULL) return -1;
 
   int inc_amt = PAGING_PAGE_ALIGNSZ(inc_sz);
 
@@ -150,9 +156,23 @@ int inc_vma_limit(struct pcb_t *caller, int vmaid, int inc_sz)
     free (newrg);
     return -1;
   }
+
+  // if (cur_vma->sbrk < cur_vma->vm_end){
+  //   struct vm_rg_struct* free_rg = malloc (sizeof(struct vm_rg_struct));
+  //   free_rg->rg_start = cur_vma->sbrk;
+  //   free_rg->rg_end = cur_vma->vm_end;
+  //   free_rg->rg_next = NULL;
+
+
   
-  free(area);
-  return 0;
+    enlist_vm_rg_node(&caller->mm->mmap->vm_freerg_list, area);
+    
+  // }
+
+
+
+  // free(area);
+  return inc_amt;
 }
 
 // #endif

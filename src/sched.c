@@ -10,6 +10,7 @@ static struct queue_t run_queue;
 static pthread_mutex_t queue_lock;
 
 static struct queue_t running_list;
+
 // Proper declaration adder 
 static current_prio = 0;
 static remaining_slot = 0;

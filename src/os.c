@@ -5,6 +5,9 @@
 #include "loader.h"
 #include "mm.h"
 
+// addition librabry 
+#include "syscall.h"
+
 #include <pthread.h>
 #include <stdio.h>
 #include <string.h>
@@ -195,6 +198,7 @@ static void read_config(const char * path) {
 }
 
 int main(int argc, char * argv[]) {
+
 	/* Read config */
 	if (argc != 2) {
 		printf("Usage: os [path to configure file]\n");

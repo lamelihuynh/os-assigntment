@@ -10,6 +10,9 @@
 
 #include "common.h"
 
+
+
+
 struct sc_regs {
         uint32_t a1;
         uint32_t a2;
@@ -38,3 +41,4 @@ int syscall(struct pcb_t*, uint32_t, struct sc_regs*);
 int libsyscall(struct pcb_t*, uint32_t, uint32_t, uint32_t, uint32_t);
 int __sys_ni_syscall(struct pcb_t*, struct sc_regs*);
 
+int os_syscall(struct pcb_t *caller, uint32_t nr, struct sc_regs* regs);

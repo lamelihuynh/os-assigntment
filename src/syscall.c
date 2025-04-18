@@ -24,6 +24,8 @@ const char* sys_call_table[] = {
 #include "syscalltbl.lst"
 };
 #undef  __SYSCALL
+
+
 const int syscall_table_size = sizeof(sys_call_table)/sizeof(char*);
 
 int __sys_ni_syscall(struct pcb_t *caller, struct sc_regs *regs)
@@ -43,4 +45,13 @@ int syscall(struct pcb_t *caller, uint32_t nr, struct sc_regs* regs)
 	default: return __sys_ni_syscall(caller, regs);
 	}
 };
+
+int os_syscall(struct pcb_t *caller, uint32_t nr, struct sc_regs* regs)
+{
+	switch (nr) {
+	#include "syscalltbl.lst"
+	default: return __sys_ni_syscall(caller, regs);
+	}
+};
+
 
