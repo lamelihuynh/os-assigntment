@@ -70,7 +70,7 @@ struct vm_rg_struct *get_vm_area_node_at_brk(struct pcb_t *caller, int vmaid, in
   newrg->rg_next = NULL;
 
   /*Update break point for future allocation*/
-  cur_vma->sbrk = newrg->rg_start + size;
+  // cur_vma->sbrk = newrg->rg_start + size;
 
   return newrg;
 }
@@ -94,7 +94,7 @@ int validate_overlap_vm_area(struct pcb_t *caller, int vmaid, int vmastart, int 
       vma = vma->vm_next;
       continue;}
 
-    if (vmastart < vma->vm_end && vmastart>= vma->vm_start || vmaend > vma->vm_start && vmaend <= vma->vm_end || vmastart <= vma->vm_start && vmaend >= vma->vm_end) {
+    if ( (vmastart < vma->vm_end && vmastart>= vma->vm_start) || (vmaend > vma->vm_start && vmaend <= vma->vm_end) || (vmastart <= vma->vm_start && vmaend >= vma->vm_end) ) {
       return -1; // Overlap detected
     }
   }

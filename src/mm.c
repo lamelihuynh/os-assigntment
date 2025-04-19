@@ -61,7 +61,6 @@ int pte_set_swap(uint32_t *pte, int swptyp, int swpoff)
 
   return 0;
 }
-
 /*
  * pte_set_swap - Set PTE entry for on-line page
  * @pte   : target page table entry (PTE)
@@ -152,8 +151,10 @@ int alloc_pages_range(struct pcb_t *caller, int req_pgnum, struct framephy_struc
         fptail = newfp_str;
       }
       else{
-        fptail->fp_next = newfp_str;
-        fptail = newfp_str;
+        // fptail->fp_next = newfp_str;
+        // fptail = newfp_str;
+        newfp_str->fp_next=fphead;
+        fphead=newfp_str;
       }
     }
       else {
@@ -396,6 +397,10 @@ int print_pgtbl(struct pcb_t *caller, uint32_t start, uint32_t end)
   printf("print_pgtbl: %d - %d", start, end);
   if (caller == NULL) { printf("NULL caller\n"); return -1;}
   printf("\n");
+
+  // for (int i = 0; i<10; i++){
+  //   printf("pgt[%d]:%u\n", i,caller->mm->pgd[i]);
+  // }
 
   for (pgit = pgn_start; pgit < pgn_end; pgit++)
   {

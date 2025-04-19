@@ -71,100 +71,110 @@ struct vm_rg_struct *get_symrg_byid(struct mm_struct *mm, int rgid)
  */
 int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr)
 {
-
-  /*Lock the memory*/
-
+  /* Lock the memory */
   pthread_mutex_lock(&mmvm_lock);
-  /*Allocate at the toproof */
-
   struct vm_rg_struct rgnode;
 
-  /* TODO: commit the vmaid */
-  // rgnode.vmaid
-
-  //
+  /* First try to allocate from existing free regions */
   if (get_free_vmrg_area(caller, vmaid, size, &rgnode) == 0)
   {
-    caller->mm->symrgtbl[rgid].rg_start = rgnode.rg_start;
-    caller->mm->symrgtbl[rgid].rg_end = rgnode.rg_end;
- 
-    *alloc_addr = rgnode.rg_start;
-
+    /* Track allocation in symbol table */
+    if (caller->mm->symrgtbl[rgid].rg_start == 0) {
+      /* First allocation for this symbol */
+      caller->mm->symrgtbl[rgid].rg_start = rgnode.rg_start;
+      caller->mm->symrgtbl[rgid].rg_end = rgnode.rg_start + size;
+      caller->mm->symrgtbl[rgid].rg_next = NULL;
+    } else {
+      /* Symbol already has memory, create linked region node */
+      struct vm_rg_struct *new_rg = malloc(sizeof(struct vm_rg_struct));
+      if (new_rg == NULL) {
+        pthread_mutex_unlock(&mmvm_lock);
+        return -1;
+      }
+      
+      /* Set up new region */
+      new_rg->rg_start = rgnode.rg_start;
+      new_rg->rg_end = rgnode.rg_end;
+      
+      /* Link to existing regions */
+      new_rg->rg_next = caller->mm->symrgtbl[rgid].rg_next;
+      caller->mm->symrgtbl[rgid].rg_next = new_rg;
+    }
+    
+    if (rgnode.rg_end >= caller->mm->mmap->sbrk ) {
+      *alloc_addr = caller->mm->mmap->sbrk ; 
+      caller->mm->mmap->sbrk = caller->mm->mmap->sbrk + size; // Update sbrk
+    }
+    else{
+      *alloc_addr = rgnode.rg_start;
+    }
     pthread_mutex_unlock(&mmvm_lock);
     return 0;
   }
 
-  /* get_free_vmrg_area FAILED handle the region management (Fig.6)*/
-
-  /* TODO retrive current vma if needed, current comment out due to compiler redundant warning*/
-  /*Attempt to increate limit to get space */
-
-  /*Retrive current vma */
+  /* No suitable free region found, increase memory limit */
   struct vm_area_struct *cur_vma = get_vma_by_num(caller->mm, vmaid);
-  if (cur_vma == NULL){
+  if (cur_vma == NULL) {
     pthread_mutex_unlock(&mmvm_lock);
     return -1;
   }
-  /*Calculate increase size and old break point*/
+  
+  /* Calculate required size and get old break */
   int inc_sz = PAGING_PAGE_ALIGNSZ(size);
-  //int inc_limit_ret;
-
-  /* TODO retrive old_sbrk if needed, current comment out due to compiler redundant warning*/
   int old_sbrk = cur_vma->sbrk;
 
-  /* TODO INCREASE THE LIMIT as inovking systemcall 
-   * sys_memap with SYSMEM_INC_OP 
-   */
+  /* Invoke syscall to increase memory limit */
   struct sc_regs regs;
   regs.a1 = SYSMEM_INC_OP;
   regs.a2 = vmaid;
   regs.a3 = inc_sz;
-
-  /* SYSCALL 17 sys_memmap   */
-  
-   int syscall_result = os_syscall(caller, 17, &regs);
+  // regs.a3 = size;
+  int syscall_result = os_syscall(caller, 17, &regs);
 
   if (syscall_result < 0) {
     pthread_mutex_unlock(&mmvm_lock);
     return -1;
   }
-  /* : commit the limit increment */
-  // *alloc_addr = old_sbrk;
+
+  /* After increasing limit, try again to get free region */
   if (get_free_vmrg_area(caller, vmaid, size, &rgnode) == 0) {
-    caller->mm->symrgtbl[rgid].rg_start = rgnode.rg_start;
-    caller->mm->symrgtbl[rgid].rg_end = rgnode.rg_end;
-    *alloc_addr = rgnode.rg_start;
+    /* Track allocation in symbol table */
+    if (caller->mm->symrgtbl[rgid].rg_start == 0) {
+      /* First allocation for this symbol */
+      caller->mm->symrgtbl[rgid].rg_start = rgnode.rg_start;
+      caller->mm->symrgtbl[rgid].rg_end = rgnode.rg_start + size ;
+      caller->mm->symrgtbl[rgid].rg_next = NULL;
+    } else {
+      /* Symbol already has memory, create linked region node */
+      struct vm_rg_struct *new_rg = malloc(sizeof(struct vm_rg_struct));
+      if (new_rg == NULL) {
+        pthread_mutex_unlock(&mmvm_lock);
+        return -1;
+      }
+      
+      /* Set up new region */
+      new_rg->rg_start = rgnode.rg_start;
+      new_rg->rg_end = rgnode.rg_start + size;
+      
+      /* Link to existing regions */
+      new_rg->rg_next = caller->mm->symrgtbl[rgid].rg_next;
+      caller->mm->symrgtbl[rgid].rg_next = new_rg;
+    }
+    if (rgnode.rg_end > caller->mm->mmap->sbrk){
+      caller->mm->mmap->sbrk = old_sbrk + size; // Update sbrk
+      *alloc_addr = old_sbrk;
+    }
+    else {
+      *alloc_addr = rgnode.rg_start;
+    }
+  } else {
+    /* Allocation failed even after expanding memory */
+    pthread_mutex_unlock(&mmvm_lock);
+    return -1;
   }
-  else {
-      pthread_mutex_unlock(&mmvm_lock);
-      return -1;
-  }
-
-  // if (old_sbrk == 0 && caller->mm->symrgtbl[rgid].rg_next == NULL) {
-    caller->mm->symrgtbl[rgid].rg_start = old_sbrk;
-    caller->mm->symrgtbl[rgid].rg_end = old_sbrk + size;
-  // else{
-  //   struct vm_rg_struct * new_rg = malloc(sizeof(struct vm_rg_struct));
-  //   new_rg->rg_start = old_sbrk;
-  //   new_rg->rg_end = old_sbrk + size;
-  //   struct vm_rg_struct * travel =caller->mm->symrgtbl[rgid].rg_next ;
-  //   if (travel == NULL){
-
-  //     caller->mm->symrgtbl[rgid].rg_next = new_rg;
-  //     pthread_mutex_unlock(&mmvm_lock);
-  //     return 0;
-  //   }
-
-  //   while (travel != NULL && travel->rg_next !=NULL){
-  //     travel=travel->rg_next;
-  //   }
-  //   travel->rg_next =  new_rg;
-  // }
-
 
   pthread_mutex_unlock(&mmvm_lock);
   return 0;
-
 }
 
 /*__free - remove a region memory
@@ -204,6 +214,31 @@ int __free(struct pcb_t *caller, int vmaid, int rgid)
   /*enlist the obsoleted memory region */
 
   enlist_vm_freerg_list(caller->mm, rgnode);
+
+  struct vm_rg_struct *next_rg = caller->mm->symrgtbl[rgid].rg_next;
+  while (next_rg != NULL) {
+    struct vm_rg_struct *temp = next_rg;
+    next_rg = next_rg->rg_next;
+    
+    /* Create new free region node */
+    struct vm_rg_struct *free_rg = malloc(sizeof(struct vm_rg_struct));
+    if (free_rg != NULL) {
+      free_rg->rg_start = temp->rg_start;
+      free_rg->rg_end = temp->rg_end;
+      free_rg->rg_next = NULL;
+      
+      /* Add to free list */
+      enlist_vm_freerg_list(caller->mm, free_rg);
+    }
+    
+    /* Free the linked region node */
+    free(temp);
+  }
+
+  caller->mm->symrgtbl[rgid].rg_start = 0;
+  caller->mm->symrgtbl[rgid].rg_end = 0;
+  caller->mm->symrgtbl[rgid].rg_next = NULL;
+
   //enlist_vm_freerg_list();
   pthread_mutex_unlock(&mmvm_lock);
 
@@ -217,11 +252,17 @@ int __free(struct pcb_t *caller, int vmaid, int rgid)
  */
 int liballoc(struct pcb_t *proc, uint32_t size, uint32_t reg_index)
 {
+
   /* TODO Implement allocation on vm area 0 */
   int addr;
-
+    
   /* By default using vmaid = 0 */
   __alloc(proc, 0, reg_index, size, &addr);
+
+  printf("===== PHYSICAL MEMORY AFTER ALLOCATION =====\n");
+  
+  printf("PID=%d - Region=%d - Address=%08X - Size=%d byte\n",proc->pid, reg_index, addr, size);  
+  print_pgtbl(proc, 0, -1); //print max TBL
   return addr;
   
 }
@@ -237,7 +278,12 @@ int libfree(struct pcb_t *proc, uint32_t reg_index)
   /* TODO Implement free region */
 
   /* By default using vmaid = 0 */
-  return __free(proc, 0, reg_index);
+  
+    __free(proc, 0, reg_index);
+    printf("===== PHYSICAL MEMORY AFTER DEALLOCATION =====\n");
+    printf("PID=%d - Region=%d \n",proc->pid, reg_index);  
+    print_pgtbl(proc, 0, -1); //print max TBL
+    return 0;
 }
 
 /*pg_getpage - get the page in ram
@@ -311,7 +357,6 @@ int pg_getval(struct mm_struct *mm, int addr, BYTE *data, struct pcb_t *caller)
   int pgn = PAGING_PGN(addr);
   //int off = PAGING_OFFST(addr);
   int fpn;
-  int png = PAGING_PGN(addr);
   int off = PAGING_OFFST(addr);
 
   /* Get the page to MEMRAM, swap from MEMSWAP if needed */
@@ -336,7 +381,7 @@ int pg_getval(struct mm_struct *mm, int addr, BYTE *data, struct pcb_t *caller)
   /* SYSCALL 17 sys_memmap */
 
   // Update data
-  *data = (BYTE)regs.a2;
+  *data = (BYTE)regs.a3;
 
   return 0;
 }
@@ -451,6 +496,8 @@ int libwrite(
     uint32_t destination, // Index of destination register
     uint32_t offset)
 {
+  __write(proc, 0, destination, offset, data);
+  printf("===== PHYSICAL MEMORY AFTER WRITING =====\n");
 #ifdef IODUMP
   printf("write region=%d offset=%d value=%d\n", destination, offset, data);
 #ifdef PAGETBL_DUMP
@@ -459,7 +506,7 @@ int libwrite(
   MEMPHY_dump(proc->mram);
 #endif
 
-  return __write(proc, 0, destination, offset, data);
+  return  0;
 }
 
 /*free_pcb_memphy - collect all memphy of pcb
@@ -517,7 +564,7 @@ int find_victim_page(struct mm_struct *mm, int *retpgn)
   return 0;
 }
 
-/*get_free_vmrg_area - get a free vm region
+/*get_free_vmrg_area - get a free vm regxion
  *@caller: caller
  *@vmaid: ID vm area to alloc memory region
  *@size: allocated size
@@ -544,19 +591,19 @@ int get_free_vmrg_area(struct pcb_t *caller, int vmaid, int size, struct vm_rg_s
 
   /* TODO Traverse on list of free vm region to find a fit space */
   while (rgit != NULL){
-    if (rgit -> rg_end - rgit-> rg_start >= aligned_size ){
+    if (rgit -> rg_end - rgit-> rg_start >= size ){
       /*Found a region large enough*/
       newrg->rg_start = rgit->rg_start;
-      newrg->rg_end = rgit->rg_start + aligned_size;
+      newrg->rg_end = rgit->rg_start + size;
       
       /*Update the free region*/
 
-      if (rgit->rg_end - rgit->rg_start == aligned_size){
+      if (rgit->rg_end - rgit->rg_start == size){
         cur_vma->vm_freerg_list = rgit->rg_next;
         free(rgit);
       }
       else {
-        rgit->rg_start = rgit->rg_start + aligned_size;
+        rgit->rg_start = rgit->rg_start + size;
       }
       return 0;
     }

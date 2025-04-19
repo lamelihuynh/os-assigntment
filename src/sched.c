@@ -12,8 +12,8 @@ static pthread_mutex_t queue_lock;
 static struct queue_t running_list;
 
 // Proper declaration adder 
-static current_prio = 0;
-static remaining_slot = 0;
+static int current_prio = 0;
+static int remaining_slot = 0;
 
 
 #ifdef MLQ_SCHED
@@ -58,30 +58,24 @@ void init_scheduler(void) {
  *  We implement stateful here using transition technique
  *  State representation   prio = 0 .. MAX_PRIO, curr_slot = 0..(MAX_PRIO - prio)
  */
-struct pcb_t * get_mlq_proc(void) {
-	struct pcb_t * proc = NULL;
-	pthread_mutex_lock(&queue_lock);
 
-	int checked_queues = 0;
-	while(checked_queues < MAX_PRIO){
-		if (!empty(&mlq_ready_queue[current_prio])&& (remaining_slot>0) ){
-			proc = dequeue(&mlq_ready_queue[current_prio]);
-			(remaining_slot)--;
-			break;
-		}
-		current_prio = (current_prio + 1) % MAX_PRIO;
-		remaining_slot = slot[current_prio];
-		checked_queues++;
-	}
+struct pcb_t *get_mlq_proc(void)
+{
+    pthread_mutex_lock(&queue_lock);
 
-	pthread_mutex_unlock(&queue_lock);
+    struct pcb_t *proc = NULL;
 
+    for (int prio = 0; prio < MAX_PRIO; ++prio)
+    {
+        if (!empty(&mlq_ready_queue[prio]))
+        {                               /* tìm thấy hàng đợi còn job   */
+            proc = dequeue(&mlq_ready_queue[prio]);
+            break;                      /* lấy đúng **một** tiến trình */
+        }
+    }
 
-
-	/*TODO: get a process from PRIORITY [ready_queue].
-	 * Remember to use lock to protect the queue.
-	 * */
-	return proc;	
+    pthread_mutex_unlock(&queue_lock);
+    return proc;        /* NULL nếu không hàng đợi nào có job          */
 }
 
 void put_mlq_proc(struct pcb_t * proc) {

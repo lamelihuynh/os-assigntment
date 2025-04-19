@@ -5,9 +5,6 @@
 #include "loader.h"
 #include "mm.h"
 
-// addition librabry 
-#include "syscall.h"
-
 #include <pthread.h>
 #include <stdio.h>
 #include <string.h>
@@ -58,6 +55,7 @@ static void * cpu_routine(void * args) {
 		if (proc == NULL) {
 			/* No process is running, the we load new process from
 		 	* ready queue */
+
 			proc = get_proc();
 			if (proc == NULL) {
                            next_slot(timer_id);
@@ -198,7 +196,6 @@ static void read_config(const char * path) {
 }
 
 int main(int argc, char * argv[]) {
-
 	/* Read config */
 	if (argc != 2) {
 		printf("Usage: os [path to configure file]\n");
@@ -211,7 +208,6 @@ int main(int argc, char * argv[]) {
 	read_config(path);
 
 	pthread_t * cpu = (pthread_t*)malloc(num_cpus * sizeof(pthread_t));
-	
 	struct cpu_args * args =
 		(struct cpu_args*)malloc(sizeof(struct cpu_args) * num_cpus);
 	pthread_t ld;
@@ -240,7 +236,6 @@ int main(int argc, char * argv[]) {
 	for(sit = 0; sit < PAGING_MAX_MMSWP; sit++)
 	       init_memphy(&mswp[sit], memswpsz[sit], rdmflag);
 
-
 	/* In Paging mode, it needs passing the system mem to each PCB through loader*/
 	struct mmpaging_ld_args *mm_ld_args = malloc(sizeof(struct mmpaging_ld_args));
 
@@ -256,12 +251,10 @@ int main(int argc, char * argv[]) {
 
 	/* Run CPU and loader */
 #ifdef MM_PAGING
-	pthread_create(&ld, NULL, ld_routine, (void*)mm_ld_args);
+ 	pthread_create(&ld, NULL, ld_routine, (void*)mm_ld_args);
 #else
-	pthread_create(&ld, NULL, ld_routine, (void*)ld_event);
+ 	pthread_create(&ld, NULL, ld_routine, (void*)ld_event);
 #endif
-
-
 	for (i = 0; i < num_cpus; i++) {
 		pthread_create(&cpu[i], NULL,
 			cpu_routine, (void*)&args[i]);
