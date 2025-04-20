@@ -58,10 +58,14 @@ struct pcb_t * get_mlq_proc(void) {
 			slot[prio]--;
 			break;
 		}
+		else{
+			slot[prio] = MAX_PRIO - prio;
+		}
 	}
 	pthread_mutex_unlock(&queue_lock);
 	return proc;	
 }
+
 
 void put_mlq_proc(struct pcb_t * proc) {
 	pthread_mutex_lock(&queue_lock);
@@ -82,7 +86,7 @@ struct pcb_t * get_proc(void) {
 void put_proc(struct pcb_t * proc) {
 	proc->ready_queue = &ready_queue;
 	proc->mlq_ready_queue = mlq_ready_queue;
-	proc->running_list = & running_list;
+	proc->running_list = &running_list;
 
 	/* TODO: put running proc to running_list */
 	pthread_mutex_lock(&queue_lock);
@@ -95,7 +99,7 @@ void put_proc(struct pcb_t * proc) {
 void add_proc(struct pcb_t * proc) {
 	proc->ready_queue = &ready_queue;
 	proc->mlq_ready_queue = mlq_ready_queue;
-	proc->running_list = & running_list;
+	proc->running_list = &running_list;
 
 	/* TODO: put running proc to running_list */
 	pthread_mutex_lock(&queue_lock);
@@ -120,7 +124,7 @@ struct pcb_t * get_proc(void) {
 
 void put_proc(struct pcb_t * proc) {
 	proc->ready_queue = &ready_queue;
-	proc->running_list = & running_list;
+	proc->running_list = &running_list;
 
 	/* TODO: put running proc to running_list */
 	
@@ -131,7 +135,7 @@ void put_proc(struct pcb_t * proc) {
 
 void add_proc(struct pcb_t * proc) {
 	proc->ready_queue = &ready_queue;
-	proc->running_list = & running_list;
+	proc->running_list = &running_list;
 
 	/* TODO: put running proc to running_list */
 
@@ -140,4 +144,3 @@ void add_proc(struct pcb_t * proc) {
 	pthread_mutex_unlock(&queue_lock);	
 }
 #endif
-

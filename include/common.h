@@ -84,6 +84,9 @@ struct pcb_t
 	uint32_t pc;		 // Program pointer, point to the next instruction
 	struct queue_t *ready_queue;
 	struct queue_t *running_list;
+	uint32_t burst_time;
+ 	uint32_t arrival_time;
+ 	uint32_t remaining_time; // For SRTF
 #ifdef MLQ_SCHED
 	struct queue_t *mlq_ready_queue;
 	// Priority on execution (if supported), on-fly aka. changeable
