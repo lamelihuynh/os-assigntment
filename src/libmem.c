@@ -308,6 +308,8 @@ int pg_getpage(struct mm_struct *mm, int pgn, int *fpn, struct pcb_t *caller)
     /* TODO: Play with your paging theory here */
     /* Find victim page */
     find_victim_page(caller->mm, &vicpgn);
+
+
     vicpte = caller->mm->pgd[vicpgn];
     vicfpn = PAGING_FPN(vicpte);
 
@@ -551,18 +553,50 @@ int find_victim_page(struct mm_struct *mm, int *retpgn)
     *retpgn = 0;
     return -1;
   }
+  while (pg->pg_next != NULL){
+    pg = pg->pg_next;
+  }
+
   /* TODO: Implement the theorical mechanism to find the victim page */
 
   /*Get the first page in FIFO queue*/
   *retpgn = pg->pgn;
 
   /*Remove from FIFO queue*/
-  mm->fifo_pgn = pg->pg_next;
+  // mm->fifo_pgn = pg->pg_next;
 
   free(pg);
 
   return 0;
 }
+
+// int find_victim_page(struct mm_struct *mm, int *retpgn)
+//  {
+//    struct pgn_t *pg = mm->fifo_pgn;
+//    struct pgn_t *prev = NULL;
+ 
+//    /* TODO: Implement the theorical mechanism to find the victim page */
+//    while(pg->pg_next != NULL){
+//      prev = pg;
+//      pg = pg->pg_next;
+//    }
+//    *retpgn = pg->pgn;
+//    if(prev == NULL)
+//      mm->fifo_pgn = NULL;
+//    else
+//      prev->pg_next = NULL;
+//    free(pg);
+ 
+//    return 0;
+//  }
+
+
+
+
+
+
+
+
 
 /*get_free_vmrg_area - get a free vm regxion
  *@caller: caller

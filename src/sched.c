@@ -68,14 +68,14 @@ struct pcb_t *get_mlq_proc(void)
     for (int prio = 0; prio < MAX_PRIO; ++prio)
     {
         if (!empty(&mlq_ready_queue[prio]))
-        {                               /* tìm thấy hàng đợi còn job   */
+        {                               
             proc = dequeue(&mlq_ready_queue[prio]);
-            break;                      /* lấy đúng **một** tiến trình */
+            break;                      
         }
     }
 
     pthread_mutex_unlock(&queue_lock);
-    return proc;        /* NULL nếu không hàng đợi nào có job          */
+    return proc;        
 }
 
 void put_mlq_proc(struct pcb_t * proc) {
