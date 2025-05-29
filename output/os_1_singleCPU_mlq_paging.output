@@ -9,7 +9,6 @@ Time slot   3
 Time slot   4
 	Loaded a process at input/proc/m1s, PID: 3 PRIO: 2
 	CPU 0: Put process  1 to run queue
-	CPU 0: Dispatched process  3
 ===== PHYSICAL MEMORY AFTER ALLOCATION =====
 PID=3 - Region=0 - Address=00000000 - Size=300 byte
 print_pgtbl: 0 - 512

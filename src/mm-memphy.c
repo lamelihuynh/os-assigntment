@@ -150,10 +150,20 @@ int MEMPHY_get_freefp(struct memphy_struct *mp, int *retfpn)
    *retfpn = fp->fpn;
    mp->free_fp_list = fp->fp_next;
 
+   // if (mp->used_fp_list == NULL)
+   // mp->used_fp_list = fp; 
+   // else
+   // {
+   //    struct framephy_struct *fp1 = mp->used_fp_list;
+   //    while (fp1->fp_next != NULL)
+   //    fp1 = fp1->fp_next;
+   //    fp1->fp_next = fp;
+   // }
+
    /* MEMPHY is iteratively used up until its exhausted
     * No garbage collector acting then it not been released
     */
-   free(fp);
+   // free(fp);
 
    return 0;
 }
@@ -163,8 +173,19 @@ int MEMPHY_dump(struct memphy_struct *mp)
   /*TODO dump memphy contnt mp->storage
    *     for tracing the memory content
    */
-   return 0;
-}
+  if( mp == NULL || mp->maxsz <=0 || mp->storage == NULL) return 0;
+  printf("===== PHYSICAL MEMORY DUMP =====\n");
+  for (int i = 0; i < mp->maxsz; ++i)
+  {
+     if (mp->storage[i] != 0)
+     {
+        printf("BYTE %08x: %d\n", i, mp->storage[i]);
+     }
+  }
+  printf("===== PHYSICAL MEMORY END-DUMP =====\n");
+  printf("================================================\n");
+  return 0;
+  }
 
 int MEMPHY_put_freefp(struct memphy_struct *mp, int fpn)
 {
@@ -184,10 +205,12 @@ int MEMPHY_put_freefp(struct memphy_struct *mp, int fpn)
  */
 int init_memphy(struct memphy_struct *mp, int max_size, int randomflg)
 {
+   
    mp->storage = (BYTE *)malloc(max_size * sizeof(BYTE));
    mp->maxsz = max_size;
    memset(mp->storage, 0, max_size * sizeof(BYTE));
 
+   // mp->used_fp_list = NULL;
    MEMPHY_format(mp, PAGING_PAGESZ);
 
    mp->rdmflg = (randomflg != 0) ? 1 : 0;

@@ -55,6 +55,7 @@ static void * cpu_routine(void * args) {
 		if (proc == NULL) {
 			/* No process is running, the we load new process from
 		 	* ready queue */
+
 			proc = get_proc();
 			if (proc == NULL) {
                            next_slot(timer_id);
@@ -250,9 +251,9 @@ int main(int argc, char * argv[]) {
 
 	/* Run CPU and loader */
 #ifdef MM_PAGING
-	pthread_create(&ld, NULL, ld_routine, (void*)mm_ld_args);
+ 	pthread_create(&ld, NULL, ld_routine, (void*)mm_ld_args);
 #else
-	pthread_create(&ld, NULL, ld_routine, (void*)ld_event);
+ 	pthread_create(&ld, NULL, ld_routine, (void*)ld_event);
 #endif
 	for (i = 0; i < num_cpus; i++) {
 		pthread_create(&cpu[i], NULL,
@@ -271,6 +272,3 @@ int main(int argc, char * argv[]) {
 	return 0;
 
 }
-
-
-
