@@ -1,9 +1,11 @@
 ***** CONTRIBUTOR *****
-1. LINH
-2. CHAU
-3. VU
-4. AN
-5. DINH
+
+1. @dinhpika - CONG DINH
+2. @gengareon - HOAI AN 
+3. @linhhcmut2311847 - NHAT LINH
+4. @TangVu4123 - TANG VU
+5. @ThauLemon - THANH CHAU
+***********************
 
 Các bước fork() dự án và push request lên : 
  - sudo apt install git , git --version (nếu chưa cài đặt GIT)
