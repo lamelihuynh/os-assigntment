@@ -1,3 +1,10 @@
+***** CONTRIBUTOR *****
+1. LINH
+2. CHAU
+3. VU
+4. AN
+5. DINH
+
 Các bước fork() dự án và push request lên : 
  - sudo apt install git , git --version (nếu chưa cài đặt GIT)
  - Tải dự án (fork()) về máy tính cá nhân : git clone https://github.com/lamelihuynh/os-assigntment
